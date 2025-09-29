@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+
+if ARGV.empty?
+  puts 'bin/generate_east_asian_width path-to-EastAsianWidth.txt'
+  exit 1
+end
+
+def unicode_width(type, category)
+  return 0 if category == 'Mn' # Nonspacing Mark
+  case type
+  when 'F', 'W' # Fullwidth, Wide
+    2
+  when 'H', 'Na', 'N' # Halfwidth, Narrow, Neutral
+    1
+  when 'A' # Ambiguous
+    -1
+  end
+end
+
+open(ARGV.first, 'rt') do |f|
+  if m = f.gets.match(/^# EastAsianWidth-(\d+\.\d+\.\d+)\.txt/)
+    unicode_version = m[1]
+  else
+    warn 'Failed to get UNICODE_VERSION'
+    unicode_version = nil
+  end
+
+  widths = []
+  f.each_line do |line|
+    next unless /^(?<first>\h+)(?:\.\.(?<last>\h+))?\s*;\s*(?<type>\w+)\s+# +(?<category>[^ ]+)/ =~ line
+
+    range = first.to_i(16)..(last || first).to_i(16)
+    widths.fill(unicode_width(type, category), range)
+  end
+
+  # EscapedPairs
+  [*0x00..0x1F, 0x7F].each { |ord| widths[ord] = 2 }
+  # printable ASCII chars
+  (0x20..0x7E).each { |ord| widths[ord] = 1 }
+
+  chunks = widths.each_with_index.chunk { |width, _idx| width || 1 }
+  chunk_last_ords = chunks.map { |width, chunk| [chunk.last.last, width] }
+  chunk_last_ords << [0x7fffffff, 1]
+
+  puts <<~EOH
+    class Reline::Unicode::EastAsianWidth
+      # This is based on EastAsianWidth.txt
+      # UNICODE_VERSION = #{unicode_version ? "'#{unicode_version}'" : 'nil'}
+
+      CHUNK_LAST, CHUNK_WIDTH = [
+    #{chunk_last_ords.map { |ord, width| "    [0x#{ord.to_s(16)}, #{width}]" }.join(",\n")}
+      ].transpose.map(&:freeze)
+    end
+  EOH
+end
