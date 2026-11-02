@@ -1,3 +1,5 @@
+> **Fork notice:** This repository is a copy of [ruby/reline](https://github.com/ruby/reline), maintained by its original authors. All credit for the original work goes to them. It's licensed under the upstream project's license (Ruby License / BSD-2-Clause).
+
 [![Gem Version](https://badge.fury.io/rb/reline.svg)](https://badge.fury.io/rb/reline)
 [![CI](https://github.com/ruby/reline/actions/workflows/reline.yml/badge.svg)](https://github.com/ruby/reline/actions/workflows/reline.yml)
 
